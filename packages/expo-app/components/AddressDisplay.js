@@ -37,9 +37,9 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     section: {
-
-        flexDirection: 'row', justifyContent: 'space-around',
-        width: '80%',
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
+        width: '100%',
         marginBottom: 24
     },
     textButton: {

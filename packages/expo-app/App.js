@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ethers } from "ethers";
 import AddressDisplay from "./components/AddressDisplay";
+import RNPickerSelect from "react-native-picker-select";
 
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
@@ -103,6 +104,13 @@ export default function App() {
     getAddress();
   }, [userSigner]);
 
+  const options = [];
+  for (const id in NETWORKS) {
+    options.push(
+      { label: NETWORKS[id].name, value: NETWORKS[id].name, color: NETWORKS[id].color }
+    );
+  }
+
   // You can warn the user if you would like them to be on a specific network
   const localChainId =
     localProvider && localProvider._network && localProvider._network.chainId;
@@ -126,96 +134,56 @@ export default function App() {
   // Load in your local 📝 contract and read a value from it:
   const readContracts = useContractLoader(localProvider, contractConfig);
 
-  // // If you want to make 🔐 write transactions to your contracts, use the userSigner:
-  // const writeContracts = useContractLoader(
-  //   userSigner,
-  //   contractConfig,
-  //   localChainId
-  // );
 
-  // EXTERNAL CONTRACT EXAMPLE:
-  //
-  // If you want to bring in the mainnet DAI contract it would look like:
-  const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
-
-  // If you want to call a function on a new block
-  useOnBlock(mainnetProvider, () => {
-    console.log(
-      `⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`
-    );
-  });
-
-  // // Then read your DAI balance like:
-  const myMainnetDAIBalance = useContractReader(
-    mainnetContracts,
-    "DAI",
-    "balanceOf",
-    ["0x34aA3F359A9D614239015126635CE7732c18fDF3"]
-  );
-
-  //
-  // 🧫 DEBUG 👨🏻‍🔬
-  //
-  useEffect(() => {
-    if (
-      DEBUG &&
-      mainnetProvider &&
-      address &&
-      selectedChainId &&
-      yourLocalBalance &&
-      yourMainnetBalance &&
-      readContracts &&
-      mainnetContracts
-    ) {
-      // console.log(
-      //   "_____________________________________ 🏗 scaffold-eth _____________________________________"
-      // );
-      // // console.log("🌎 mainnetProvider", mainnetProvider);
-      // console.log("🏠 localChainId", localChainId);
-      // console.log("👩‍💼 selected address:", address);
-      // console.log("🕵🏻‍♂️ selectedChainId:", selectedChainId);
-      // console.log(
-      //   "💵 yourLocalBalance",
-      //   yourLocalBalance ? ethers.utils.formatEther(yourLocalBalance) : "..."
-      // );
-      // console.log(
-      //   "💵 yourMainnetBalance",
-      //   yourMainnetBalance
-      //     ? ethers.utils.formatEther(yourMainnetBalance)
-      //     : "..."
-      // );
-    }
-  }, [
-    mainnetProvider,
-    address,
-    selectedChainId,
-    yourLocalBalance,
-    yourMainnetBalance,
-    readContracts,
-    mainnetContracts,
-    localChainId,
-    myMainnetDAIBalance,
-  ]);
 
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
-      {address && <AddressDisplay address={address} />}
+      <RNPickerSelect
+        value={selectedNetwork}
+        onValueChange={setSelectedNetwork}
+        items={options}
+        style={pickerSelectStyles}
+
+      />
+      <View style={{ marginTop: 200 }}>
+        {address && <AddressDisplay address={address} />}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
+    flexDirection: 'column',
+    justifyContent: 'space-around',
     alignItems: "center",
     paddingHorizontal: 30,
-    justifyContent: "center",
+    backgroundColor: "#fff",
   },
   text: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 40,
   },
+});
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    marginHorizontal: '20%',
+    width: '60%',
+    height: 36,
+    fontSize: 20,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 32,
+    color: 'black',
+    // backgroundColor: '#eee'
+  },
+  iconContainer: {
+    top: 46,
+    right: 100,
+  },
+  chevronDown: {
+    color: '#fff'
+  }
 });
