@@ -22,6 +22,7 @@ import { useStaticJsonRPC, useUserProviderAndSigner } from "./hooks";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ethers } from "ethers";
+import AddressDisplay from "./components/AddressDisplay";
 
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
@@ -198,14 +199,8 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.text]}>
-        Using Burner 🔥 Wallet with Address {address}
-      </Text>
-
-      <Text style={[styles.text, { fontStyle: "italic", color: "#575757" }]}>
-        Open up App.js to start working on your scaffold-eth Expo app!
-      </Text>
       <StatusBar style="auto" />
+      {address && <AddressDisplay address={address} />}
     </View>
   );
 }
