@@ -14,11 +14,12 @@ import { useGasPrice } from "eth-hooks/useGasPrice";
 import { useExchangeEthPrice } from "eth-hooks/dapps/dex";
 import { useContractReader } from "eth-hooks/useContractReader";
 import { useContractLoader } from "eth-hooks/useContractLoader";
-import { useUserProviderAndSigner } from "eth-hooks/useUserProviderAndSigner";
+// import { useUserProviderAndSigner } from "eth-hooks/useUserProviderAndSigner";
 import externalContracts from "./contracts/external_contracts";
 import deployedContracts from "./contracts/hardhat_contracts.json";
 // import { Transactor, Web3ModalSetup } from "./helpers";
-import { useStaticJsonRPC } from "./hooks";
+import { useStaticJsonRPC, useUserProviderAndSigner } from "./hooks";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ethers } from "ethers";
 
@@ -26,7 +27,7 @@ import { ethers } from "ethers";
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
 const DEBUG = true;
-const USE_BURNER_WALLET = true; // toggle burner wallet feature
+const USE_BURNER_WALLET = false; // toggle burner wallet feature
 
 // 🛰 providers
 const providers = [
@@ -61,14 +62,35 @@ export default function App() {
 
   /* 🔥 This hook will get the price of Gas from ⛽️ EtherGasStation */
   const gasPrice = useGasPrice(targetNetwork, "fast");
-  // Use your injected provider from 🦊 Metamask or if you don't have it then instantly generate a 🔥 burner wallet.
-  const userProviderAndSigner =
+
+
+  // Use your injected provider from 🦊 Metamask
+  const userProvider =
     useUserProviderAndSigner(
       injectedProvider,
       localProvider,
       USE_BURNER_WALLET
     ) || {};
-  const userSigner = userProviderAndSigner.signer;
+
+
+  // On App load, check async storage for an existing wallet, else generate a 🔥 burner wallet.
+  const [userSigner, setUserSigner] = useState();
+  useEffect(() => {
+    const loadAccount = async () => {
+      // FIXME: REFACTOR TO USE SECURE STORAGE
+      const pk = await AsyncStorage.getItem('metaPrivateKey')
+      if (!pk) {
+        const generatedWallet = ethers.Wallet.createRandom();
+        const privateKey = generatedWallet._signingKey().privateKey;
+        await AsyncStorage.setItem('metaPrivateKey', privateKey)
+        setUserSigner(generatedWallet);
+      } else {
+        const existingWallet = new ethers.Wallet(pk);
+        setUserSigner(existingWallet);
+      }
+    }
+    loadAccount()
+  }, [])
 
   useEffect(() => {
     async function getAddress() {
@@ -104,11 +126,11 @@ export default function App() {
   const readContracts = useContractLoader(localProvider, contractConfig);
 
   // // If you want to make 🔐 write transactions to your contracts, use the userSigner:
-  const writeContracts = useContractLoader(
-    userSigner,
-    contractConfig,
-    localChainId
-  );
+  // const writeContracts = useContractLoader(
+  //   userSigner,
+  //   contractConfig,
+  //   localChainId
+  // );
 
   // EXTERNAL CONTRACT EXAMPLE:
   //
@@ -142,30 +164,25 @@ export default function App() {
       yourLocalBalance &&
       yourMainnetBalance &&
       readContracts &&
-      writeContracts &&
       mainnetContracts
     ) {
-      console.log(
-        "_____________________________________ 🏗 scaffold-eth _____________________________________"
-      );
-      console.log("🌎 mainnetProvider", mainnetProvider);
-      console.log("🏠 localChainId", localChainId);
-      console.log("👩‍💼 selected address:", address);
-      console.log("🕵🏻‍♂️ selectedChainId:", selectedChainId);
-      console.log(
-        "💵 yourLocalBalance",
-        yourLocalBalance ? ethers.utils.formatEther(yourLocalBalance) : "..."
-      );
-      console.log(
-        "💵 yourMainnetBalance",
-        yourMainnetBalance
-          ? ethers.utils.formatEther(yourMainnetBalance)
-          : "..."
-      );
-      console.log("📝 readContracts", readContracts);
-      console.log("🌍 DAI contract on mainnet:", mainnetContracts);
-      console.log("💵 yourMainnetDAIBalance", myMainnetDAIBalance);
-      console.log("🔐 writeContracts", writeContracts);
+      // console.log(
+      //   "_____________________________________ 🏗 scaffold-eth _____________________________________"
+      // );
+      // // console.log("🌎 mainnetProvider", mainnetProvider);
+      // console.log("🏠 localChainId", localChainId);
+      // console.log("👩‍💼 selected address:", address);
+      // console.log("🕵🏻‍♂️ selectedChainId:", selectedChainId);
+      // console.log(
+      //   "💵 yourLocalBalance",
+      //   yourLocalBalance ? ethers.utils.formatEther(yourLocalBalance) : "..."
+      // );
+      // console.log(
+      //   "💵 yourMainnetBalance",
+      //   yourMainnetBalance
+      //     ? ethers.utils.formatEther(yourMainnetBalance)
+      //     : "..."
+      // );
     }
   }, [
     mainnetProvider,
@@ -174,7 +191,6 @@ export default function App() {
     yourLocalBalance,
     yourMainnetBalance,
     readContracts,
-    writeContracts,
     mainnetContracts,
     localChainId,
     myMainnetDAIBalance,
@@ -185,6 +201,7 @@ export default function App() {
       <Text style={[styles.text]}>
         Using Burner 🔥 Wallet with Address {address}
       </Text>
+
       <Text style={[styles.text, { fontStyle: "italic", color: "#575757" }]}>
         Open up App.js to start working on your scaffold-eth Expo app!
       </Text>
