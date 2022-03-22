@@ -1,13 +1,32 @@
 
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { StyleSheet, Text, View, Button, TextInput, TouchableOpacity } from "react-native";
+import { useGasPrice } from "eth-hooks/useGasPrice";
+import { txContext } from '../context/txContext';
+import { ethers } from "ethers";
+import { useStaticJsonRPC } from "../hooks";
 
 export function SendModal({ route, navigation }) {
 
-    const [toAddr, setToAddr] = useState("");
-    const [tokenAmount, setTokenAmount] = useState(0);
+    const [toAddr, setToAddr] = useState("0xA00F36889e25249492f93e00852Ba183776DC747");
+    const [tokenAmount, setTokenAmount] = useState("0");
 
-    const { ethPrice } = route.params;
+    const wallet = useContext(txContext);
+
+    const { ethPrice, targetNetwork } = route.params;
+
+    const localProvider = useStaticJsonRPC([targetNetwork.rpcUrl]);
+
+    const sendTxn = async () => {
+        const signer = wallet.connect(localProvider);
+        await signer.sendTransaction({
+            to: toAddr,
+            value: ethers.utils.parseEther(tokenAmount),
+            data: ""
+        });
+    }
+
+
     return (
         <View style={{ justifyContent: 'center', marginHorizontal: 18 }}>
             <View style={[styles.row, { justifyContent: 'center' }]}>
@@ -45,7 +64,7 @@ export function SendModal({ route, navigation }) {
             <View style={[styles.row]}>
                 <Text style={{ fontSize: 24, fontWeight: '500', marginTop: 18, color: '#777' }}>~${(Number(tokenAmount) * ethPrice).toFixed(2)} USD</Text>
             </View>
-            <TouchableOpacity style={[styles.button, { backgroundColor: '#0E76FD', marginTop: 24 }]} >
+            <TouchableOpacity style={[styles.button, { backgroundColor: '#0E76FD', marginTop: 24 }]} onPress={sendTxn}>
                 <Text
                     style={{
                         color: '#fff',

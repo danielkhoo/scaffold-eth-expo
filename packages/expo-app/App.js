@@ -29,7 +29,8 @@ import { NETWORKS, ALCHEMY_KEY } from "./constants";
 import { SendModal } from './screens/SendModal'
 import Transactor from "./helpers/Transactor";
 import { DisplayQRModal } from "./screens/DisplayQRModal";
-
+import Toast from 'react-native-toast-message';
+import { txContext } from './context/txContext';
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
@@ -85,17 +86,23 @@ export default function App() {
   // On App load, check async storage for an existing wallet, else generate a 🔥 burner wallet.
   const [userSigner, setUserSigner] = useState();
   useEffect(() => {
+    console.log('useEffect App');
     const loadAccountAndNetwork = async () => {
       // FIXME: REFACTOR TO USE SECURE STORAGE
       const pk = await AsyncStorage.getItem('metaPrivateKey')
+      let signer;
       if (!pk) {
         const generatedWallet = ethers.Wallet.createRandom();
         const privateKey = generatedWallet._signingKey().privateKey;
         await AsyncStorage.setItem('metaPrivateKey', privateKey)
+        signer = generatedWallet.connect(localProvider);
         setUserSigner(generatedWallet);
+        setAddress(generatedWallet.address)
       } else {
         const existingWallet = new ethers.Wallet(pk);
+        signer = existingWallet.connect(localProvider);
         setUserSigner(existingWallet);
+        setAddress(existingWallet.address)
       }
 
       const cachedNetwork = await AsyncStorage.getItem('network')
@@ -104,15 +111,29 @@ export default function App() {
     loadAccountAndNetwork()
   }, [])
 
-  useEffect(() => {
-    async function getAddress() {
-      if (userSigner) {
-        const newAddress = await userSigner.getAddress();
-        setAddress(newAddress);
-      }
-    }
-    getAddress();
-  }, [userSigner]);
+
+  // useEffect(() => {
+  //   async function getAddress() {
+  //     if (userSigner) {
+  //       const newAddress = await userSigner.getAddress();
+  //       setAddress(newAddress);
+  //     }
+  //   }
+  //   getAddress();
+  // }, [userSigner]);
+
+
+  const sendTxn = async () => {
+    const { wallet, targetNetwork } = userSigner;
+    console.log(wallet, targetNetwork);
+
+    // await signer.sendTransaction({
+    //   to: "0xA00F36889e25249492f93e00852Ba183776DC747",
+    //   value: ethers.utils.parseEther("0.01"),
+    //   data: ""
+    // });
+
+  }
 
   const options = [];
   for (const id in NETWORKS) {
@@ -122,17 +143,17 @@ export default function App() {
   }
 
 
-  const tx = Transactor(userSigner, gasPrice);
+  // const tx = Transactor(userSigner, gasPrice);
 
 
   // You can warn the user if you would like them to be on a specific network
   const localChainId =
     localProvider && localProvider._network && localProvider._network.chainId;
-  const selectedChainId =
-    userSigner &&
-    userSigner.provider &&
-    userSigner.provider._network &&
-    userSigner.provider._network.chainId;
+  // const selectedChainId =
+  //   userSigner &&
+  //   userSigner.provider &&
+  //   userSigner.provider._network &&
+  //   userSigner.provider._network.chainId;
 
   // 🏗 scaffold-eth is full of handy hooks like this one to get your balance:
   const yourLocalBalance = useBalance(localProvider, address);
@@ -161,6 +182,16 @@ export default function App() {
   }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance, readContracts])
 
 
+  const copiedToast = () => {
+    Toast.show({
+      position: 'bottom',
+      visibilityTime: 1000,
+      type: 'success',
+      text1: 'Copied'
+    });
+  }
+
+
   function HomeScreen({ navigation }) {
     return (
       <View style={styles.container}>
@@ -177,10 +208,14 @@ export default function App() {
         />
         {address &&
           <View style={{ marginTop: 60 }}>
-            <AddressDisplay address={address} navigation={navigation} />
+            <AddressDisplay address={address} navigation={navigation} toast={copiedToast} />
             <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
             <View style={{ alignItems: 'center' }}>
-              <TouchableOpacity style={{ width: 80, height: 36, justifyContent: 'center' }} onPress={() => navigation.navigate('SendModal', { ethPrice: price })}>
+              <TouchableOpacity
+                style={{ width: 80, height: 36, justifyContent: 'center' }}
+                // onPress={sendTxn}
+                onPress={() => navigation.navigate('SendModal', { ethPrice: price, targetNetwork })}
+              >
                 <Text
                   style={styles.textButton}>
                   Send
@@ -189,32 +224,35 @@ export default function App() {
             </View>
           </View>
         }
+        <Toast />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Group screenOptions={{ headerShown: false }} >
-          <Stack.Screen name="Home" component={HomeScreen} />
-        </Stack.Group>
-        <Stack.Group screenOptions={{ presentation: 'modal', headerShown: false }} >
-          <Stack.Screen name="DisplayQRModal" component={DisplayQRModal} />
-          <Stack.Screen name="SendModal" component={SendModal} />
-        </Stack.Group>
-      </Stack.Navigator>
-    </NavigationContainer>
+    <txContext.Provider value={userSigner}>
+      <NavigationContainer>
+        <Stack.Navigator>
+          <Stack.Group screenOptions={{ headerShown: false }} >
+            <Stack.Screen name="Home" component={HomeScreen} />
+          </Stack.Group>
+          <Stack.Group screenOptions={{ presentation: 'modal', headerShown: false }} >
+            <Stack.Screen name="DisplayQRModal" component={DisplayQRModal} />
+            <Stack.Screen name="SendModal" component={SendModal} />
+          </Stack.Group>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </txContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
-    justifyContent: 'space-around',
     alignItems: "center",
     paddingHorizontal: 30,
-    backgroundColor: "#fff"
+    backgroundColor: "#fff",
+    height: '100%'
   },
   text: {
     fontSize: 16,
