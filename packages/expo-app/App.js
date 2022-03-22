@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ethers } from "ethers";
 import AddressDisplay from "./components/AddressDisplay";
 import RNPickerSelect from "react-native-picker-select";
+import TokenDisplay from "./components/TokenDisplay";
 
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
@@ -78,7 +79,7 @@ export default function App() {
   // On App load, check async storage for an existing wallet, else generate a 🔥 burner wallet.
   const [userSigner, setUserSigner] = useState();
   useEffect(() => {
-    const loadAccount = async () => {
+    const loadAccountAndNetwork = async () => {
       // FIXME: REFACTOR TO USE SECURE STORAGE
       const pk = await AsyncStorage.getItem('metaPrivateKey')
       if (!pk) {
@@ -90,8 +91,11 @@ export default function App() {
         const existingWallet = new ethers.Wallet(pk);
         setUserSigner(existingWallet);
       }
+
+      const cachedNetwork = await AsyncStorage.getItem('network')
+      if (cachedNetwork) setSelectedNetwork(cachedNetwork)
     }
-    loadAccount()
+    loadAccountAndNetwork()
   }, [])
 
   useEffect(() => {
@@ -110,6 +114,9 @@ export default function App() {
       { label: NETWORKS[id].name, value: NETWORKS[id].name, color: NETWORKS[id].color }
     );
   }
+
+
+
 
   // You can warn the user if you would like them to be on a specific network
   const localChainId =
@@ -134,6 +141,18 @@ export default function App() {
   // Load in your local 📝 contract and read a value from it:
   const readContracts = useContractLoader(localProvider, contractConfig);
 
+  useEffect(() => {
+    if (DEBUG && mainnetProvider && address && selectedNetwork && yourLocalBalance && yourMainnetBalance) {
+      console.log("_____________________________________ 🏗 scaffold-eth _____________________________________")
+      console.log("🌎 mainnetProvider", mainnetProvider)
+      console.log("🏠 localChainId", localChainId)
+      console.log("👩‍💼 selected address:", address)
+      console.log("🕵🏻‍♂️ selectedNetwork:", selectedNetwork)
+      console.log("💵 yourLocalBalance", yourLocalBalance ? ethers.utils.formatEther(yourLocalBalance) : "...")
+      console.log("💵 yourMainnetBalance", yourMainnetBalance ? ethers.utils.formatEther(yourMainnetBalance) : "...")
+    }
+  }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance, readContracts])
+
 
 
   return (
@@ -141,14 +160,20 @@ export default function App() {
       <StatusBar style="auto" />
       <RNPickerSelect
         value={selectedNetwork}
-        onValueChange={setSelectedNetwork}
+        onValueChange={async (value) => {
+          await AsyncStorage.setItem('network', value)
+          setSelectedNetwork(value)
+        }}
         items={options}
         style={pickerSelectStyles}
 
       />
-      <View style={{ marginTop: 200 }}>
-        {address && <AddressDisplay address={address} />}
-      </View>
+      {address &&
+        <View style={{ marginTop: 60 }}>
+          <AddressDisplay address={address} />
+          <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
+        </View>
+      }
     </View>
   );
 }
