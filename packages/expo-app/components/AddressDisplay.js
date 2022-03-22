@@ -17,7 +17,7 @@ export default function AddressDisplay(props) {
                         Copy Address
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { }}>
+                <TouchableOpacity onPress={() => props.navigation.navigate('DisplayQRModal', { address })}>
                     <Text
                         style={styles.textButton}>
                         Display QR

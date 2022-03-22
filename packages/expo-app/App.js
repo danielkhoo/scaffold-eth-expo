@@ -27,6 +27,8 @@ import AddressDisplay from "./components/AddressDisplay";
 import TokenDisplay from "./components/TokenDisplay";
 import { NETWORKS, ALCHEMY_KEY } from "./constants";
 import { SendModal } from './screens/SendModal'
+import Transactor from "./helpers/Transactor";
+import { DisplayQRModal } from "./screens/DisplayQRModal";
 
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
@@ -120,6 +122,7 @@ export default function App() {
   }
 
 
+  const tx = Transactor(userSigner, gasPrice);
 
 
   // You can warn the user if you would like them to be on a specific network
@@ -174,10 +177,10 @@ export default function App() {
         />
         {address &&
           <View style={{ marginTop: 60 }}>
-            <AddressDisplay address={address} />
+            <AddressDisplay address={address} navigation={navigation} />
             <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
             <View style={{ alignItems: 'center' }}>
-              <TouchableOpacity style={{ width: 80, height: 36, justifyContent: 'center' }} onPress={() => navigation.navigate('MyModal')}>
+              <TouchableOpacity style={{ width: 80, height: 36, justifyContent: 'center' }} onPress={() => navigation.navigate('SendModal', { ethPrice: price })}>
                 <Text
                   style={styles.textButton}>
                   Send
@@ -197,7 +200,8 @@ export default function App() {
           <Stack.Screen name="Home" component={HomeScreen} />
         </Stack.Group>
         <Stack.Group screenOptions={{ presentation: 'modal', headerShown: false }} >
-          <Stack.Screen name="MyModal" component={SendModal} />
+          <Stack.Screen name="DisplayQRModal" component={DisplayQRModal} />
+          <Stack.Screen name="SendModal" component={SendModal} />
         </Stack.Group>
       </Stack.Navigator>
     </NavigationContainer>
