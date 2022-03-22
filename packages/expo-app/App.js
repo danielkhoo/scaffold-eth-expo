@@ -1,30 +1,32 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Button } from "react-native";
 // Import the crypto getRandomValues shim (**BEFORE** the shims)
 import "react-native-get-random-values";
 // Import the the ethers shims (**BEFORE** ethers)
 import "@ethersproject/shims";
-import { NETWORKS, ALCHEMY_KEY } from "./constants";
+import { ethers } from "ethers";
 // Polyfill for localStorage
 import "./helpers/windows";
-import { useOnBlock } from "eth-hooks/useOnBlock";
 import { useBalance } from "eth-hooks/useBalance";
 import { useGasPrice } from "eth-hooks/useGasPrice";
 import { useExchangeEthPrice } from "eth-hooks/dapps/dex";
-import { useContractReader } from "eth-hooks/useContractReader";
 import { useContractLoader } from "eth-hooks/useContractLoader";
 // import { useUserProviderAndSigner } from "eth-hooks/useUserProviderAndSigner";
 import externalContracts from "./contracts/external_contracts";
 import deployedContracts from "./contracts/hardhat_contracts.json";
 // import { Transactor, Web3ModalSetup } from "./helpers";
 import { useStaticJsonRPC, useUserProviderAndSigner } from "./hooks";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { ethers } from "ethers";
-import AddressDisplay from "./components/AddressDisplay";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import RNPickerSelect from "react-native-picker-select";
+
+import AddressDisplay from "./components/AddressDisplay";
 import TokenDisplay from "./components/TokenDisplay";
+import { NETWORKS, ALCHEMY_KEY } from "./constants";
+import { SendModal } from './screens/SendModal'
 
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
@@ -38,6 +40,8 @@ const providers = [
   `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
   "https://rpc.scaffoldeth.io:48544",
 ];
+
+const Stack = createStackNavigator();
 
 export default function App() {
   const networkOptions = [initialNetwork.name, "mainnet", "rinkeby"];
@@ -154,27 +158,49 @@ export default function App() {
   }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance, readContracts])
 
 
+  function HomeScreen({ navigation }) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="auto" />
+        <RNPickerSelect
+          value={selectedNetwork}
+          onValueChange={async (value) => {
+            await AsyncStorage.setItem('network', value)
+            setSelectedNetwork(value)
+          }}
+          items={options}
+          style={pickerSelectStyles}
+
+        />
+        {address &&
+          <View style={{ marginTop: 60 }}>
+            <AddressDisplay address={address} />
+            <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
+            <View style={{ alignItems: 'center' }}>
+              <TouchableOpacity style={{ width: 80, height: 36, justifyContent: 'center' }} onPress={() => navigation.navigate('MyModal')}>
+                <Text
+                  style={styles.textButton}>
+                  Send
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
-      <RNPickerSelect
-        value={selectedNetwork}
-        onValueChange={async (value) => {
-          await AsyncStorage.setItem('network', value)
-          setSelectedNetwork(value)
-        }}
-        items={options}
-        style={pickerSelectStyles}
-
-      />
-      {address &&
-        <View style={{ marginTop: 60 }}>
-          <AddressDisplay address={address} />
-          <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
-        </View>
-      }
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Group screenOptions={{ headerShown: false }} >
+          <Stack.Screen name="Home" component={HomeScreen} />
+        </Stack.Group>
+        <Stack.Group screenOptions={{ presentation: 'modal', headerShown: false }} >
+          <Stack.Screen name="MyModal" component={SendModal} />
+        </Stack.Group>
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
@@ -184,12 +210,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: "center",
     paddingHorizontal: 30,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff"
   },
   text: {
     fontSize: 16,
     textAlign: "center",
     marginBottom: 40,
+  },
+  textButton: {
+    color: '#0E76FD',
+    fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
 const pickerSelectStyles = StyleSheet.create({
