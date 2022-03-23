@@ -4,12 +4,45 @@ import { StyleSheet, Text, View, Button, TextInput, TouchableOpacity } from "rea
 import { useGasPrice } from "eth-hooks/useGasPrice";
 import { txContext } from '../context/txContext';
 import { ethers } from "ethers";
+import Toast from 'react-native-toast-message';
 import { useStaticJsonRPC } from "../hooks";
 
+const sendTransaction = async (transaction, signer, provider) => {
+    let tx;
+    try {
+        tx = await signer.sendTransaction(transaction);
+    } catch (error) {
+        console.log(error);
+    }
+    if (tx) {
+        const pendingTxn = await provider.getTransaction(tx.hash)
+        console.log(pendingTxn);
+
+
+        provider.once(tx.hash, transaction => {
+            console.log('MINED!!');
+            console.log(transaction);
+            Toast.show({
+                position: 'top',
+                visibilityTime: 1000,
+                type: 'success',
+                text1: 'Transaction successful'
+            })
+
+        })
+
+        return pendingTxn;
+    }
+}
+
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 export function SendModal({ route, navigation }) {
 
     const [toAddr, setToAddr] = useState("0xA00F36889e25249492f93e00852Ba183776DC747");
     const [tokenAmount, setTokenAmount] = useState("0");
+    const [loading, setLoading] = useState(false);
 
     const wallet = useContext(txContext);
 
@@ -18,12 +51,25 @@ export function SendModal({ route, navigation }) {
     const localProvider = useStaticJsonRPC([targetNetwork.rpcUrl]);
 
     const sendTxn = async () => {
+        setLoading(true)
         const signer = wallet.connect(localProvider);
-        await signer.sendTransaction({
+        await sendTransaction({
             to: toAddr,
             value: ethers.utils.parseEther(tokenAmount),
             data: ""
-        });
+        }, signer, localProvider)
+
+        Toast.show({
+            position: 'top',
+            visibilityTime: 1000,
+            type: 'success',
+            text1: 'Transaction sent'
+        })
+
+        await timeout(2000)// Intentional Delay
+
+        setLoading(false)
+        navigation.goBack()
     }
 
 
@@ -64,7 +110,10 @@ export function SendModal({ route, navigation }) {
             <View style={[styles.row]}>
                 <Text style={{ fontSize: 24, fontWeight: '500', marginTop: 18, color: '#777' }}>~${(Number(tokenAmount) * ethPrice).toFixed(2)} USD</Text>
             </View>
-            <TouchableOpacity style={[styles.button, { backgroundColor: '#0E76FD', marginTop: 24 }]} onPress={sendTxn}>
+            <TouchableOpacity
+                style={[styles.button, { backgroundColor: loading ? '#777' : '#0E76FD', marginTop: 24 }]}
+                onPress={sendTxn}
+                disabled={loading}>
                 <Text
                     style={{
                         color: '#fff',
@@ -74,8 +123,10 @@ export function SendModal({ route, navigation }) {
                     Send
                 </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, { marginTop: 6 }]}
+            <TouchableOpacity
+                style={[styles.button, { marginTop: 6 }]}
                 onPress={() => navigation.goBack()}
+                disabled={loading}
             >
                 <Text
                     style={{
@@ -86,6 +137,8 @@ export function SendModal({ route, navigation }) {
                     Cancel
                 </Text>
             </TouchableOpacity>
+
+            <Toast />
         </View>
     );
 }
