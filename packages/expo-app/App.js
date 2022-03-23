@@ -31,6 +31,7 @@ import Transactor from "./helpers/Transactor";
 import { DisplayQRModal } from "./screens/DisplayQRModal";
 import Toast from 'react-native-toast-message';
 import { txContext } from './context/txContext';
+import PunkBlockie from "./components/PunkBlockie";
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
@@ -182,16 +183,6 @@ export default function App() {
   }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance, readContracts])
 
 
-  const copiedToast = () => {
-    Toast.show({
-      position: 'bottom',
-      visibilityTime: 1000,
-      type: 'success',
-      text1: 'Copied'
-    });
-  }
-
-
   function HomeScreen({ navigation }) {
     return (
       <View style={styles.container}>
@@ -208,7 +199,10 @@ export default function App() {
         />
         {address &&
           <View style={{ marginTop: 60 }}>
-            <AddressDisplay address={address} navigation={navigation} toast={copiedToast} />
+            <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <PunkBlockie address={address} />
+            </View>
+            <AddressDisplay address={address} navigation={navigation} toast={Toast.show} />
             <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
             <View style={{ alignItems: 'center' }}>
               <TouchableOpacity
