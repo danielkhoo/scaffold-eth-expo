@@ -200,7 +200,7 @@ export default function App() {
         {address &&
           <View style={{ marginTop: 60 }}>
             <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <PunkBlockie address={address} />
+              <PunkBlockie address={address} size={80} />
             </View>
             <AddressDisplay address={address} navigation={navigation} toast={Toast.show} />
             <TokenDisplay tokenBalance={yourLocalBalance} tokenName={'Ether'} tokenSymbol={'ETH'} tokenPrice={price} />
