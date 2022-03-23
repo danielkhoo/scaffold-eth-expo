@@ -7,33 +7,6 @@ import { ethers } from "ethers";
 import Toast from 'react-native-toast-message';
 import { useStaticJsonRPC } from "../hooks";
 
-const sendTransaction = async (transaction, signer, provider) => {
-    let tx;
-    try {
-        tx = await signer.sendTransaction(transaction);
-    } catch (error) {
-        console.log(error);
-    }
-    if (tx) {
-        const pendingTxn = await provider.getTransaction(tx.hash)
-        console.log(pendingTxn);
-
-
-        provider.once(tx.hash, transaction => {
-            console.log('MINED!!');
-            console.log(transaction);
-            Toast.show({
-                position: 'top',
-                visibilityTime: 1000,
-                type: 'success',
-                text1: 'Transaction successful'
-            })
-
-        })
-
-        return pendingTxn;
-    }
-}
 
 function timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -53,23 +26,54 @@ export function SendModal({ route, navigation }) {
     const sendTxn = async () => {
         setLoading(true)
         const signer = wallet.connect(localProvider);
-        await sendTransaction({
-            to: toAddr,
-            value: ethers.utils.parseEther(tokenAmount),
-            data: ""
-        }, signer, localProvider)
 
-        Toast.show({
-            position: 'top',
-            visibilityTime: 1000,
-            type: 'success',
-            text1: 'Transaction sent'
-        })
+        try {
 
-        await timeout(2000)// Intentional Delay
+            const tx = await signer.sendTransaction({
+                to: toAddr,
+                value: ethers.utils.parseEther(tokenAmount),
+                data: ""
+            })
 
-        setLoading(false)
-        navigation.goBack()
+            const pendingTxn = await localProvider.getTransaction(tx.hash)
+            console.log(pendingTxn);
+
+            Toast.show({
+                position: 'top',
+                visibilityTime: 1000,
+                type: 'success',
+                text1: 'Transaction sent'
+            })
+
+            localProvider.once(tx.hash, transaction => {
+                console.log('MINED!!');
+                console.log(transaction);
+                Toast.show({
+                    position: 'top',
+                    visibilityTime: 1000,
+                    type: 'success',
+                    text1: 'Transaction successful'
+                })
+            })
+
+            await timeout(2000)// Intentional Delay
+
+            navigation.goBack()
+
+        } catch (err) {
+            console.log(err.toString());
+            Toast.show({
+                position: 'top',
+                visibilityTime: 4000,
+                type: 'error',
+                text1: 'Error',
+                text2: err.toString()
+            })
+        } finally {
+            setLoading(false)
+        }
+
+
     }
 
 
