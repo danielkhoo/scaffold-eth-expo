@@ -164,24 +164,30 @@ export default function App() {
   const connectWallet = sessionDetails => {
     console.log(" 📡 Connecting to Wallet Connect....", sessionDetails);
 
-    const connector = new WalletConnect(sessionDetails);
 
-    setWallectConnectConnector(connector);
+    const connector = new WalletConnect(
+      {
+        // Required
+        uri: "wc:7d1b6706-ba26-48d6-b068-c4ca67031d56@1?bridge=https%3A%2F%2Fb.bridge.walletconnect.org&key=0de7841e5159e4b3923f88b26e2fad7d92033e28d64ac90f4a1c09f2afd672e2",
+        // Required
+        clientMeta: {
+          description: "WalletConnect Developer App",
+          url: "https://walletconnect.org",
+          icons: ["https://walletconnect.org/walletconnect-logo.png"],
+          name: "WalletConnect",
+        },
+      },
+
+    );
 
     // Subscribe to session requests
     connector.on("session_request", (error, payload) => {
-      if (error) throw error
+      console.log("session_request");
+      if (error) {
+        throw error;
+      }
 
-      console.log("SESSION REQUEST");
       // Handle Session Request
-
-      connector.approveSession({
-        accounts: [address,],
-        chainId: targetNetwork.chainId, // required
-      });
-
-      setConnected(true);
-      setWallectConnectConnectorSession(connector.session);
 
       /* payload:
       {
@@ -200,29 +206,9 @@ export default function App() {
       }
       */
     });
-
-    // Subscribe to call requests
-    connector.on("call_request", async (error, payload) => {
-      if (error) {
-        throw error;
-      }
-
-      console.log("REQUEST PERMISSION TO:", payload, payload.params[0]);
-
-      // Render modal for approve / cancel
-    });
-
-    connector.on("disconnect", (error, payload) => {
-      if (error) throw error
-      console.log("disconnect");
-      // setTimeout(() => {
-      //   window.location.reload();
-      // }, 1);
-      // Delete connector
-    });
   };
 
-  const [walletConnectUrl, setWalletConnectUrl] = useState("walletConnectUrl");
+  const [walletConnectUrl, setWalletConnectUrl] = useState();
   const [connected, setConnected] = useState();
   const [wallectConnectConnectorSession, setWallectConnectConnectorSession] = useState("wallectConnectConnectorSession");
   // const [wallectConnectConnector, setWallectConnectConnector] = useState();
@@ -247,19 +233,19 @@ export default function App() {
         //CLEAR LOCAL STORAGE?!?
         console.log("clear local storage and connect...");
         // localStorage.removeItem("walletconnect"); // lololol
-        // connectWallet(
-        //   {
-        //     // Required
-        //     uri: walletConnectUrl,
-        //     // Required
-        //     clientMeta: {
-        //       description: "Forkable web wallet for small/quick transactions.",
-        //       url: "https://punkwallet.io",
-        //       icons: ["https://punkwallet.io/punk.png"],
-        //       name: "🧑‍🎤 PunkWallet.io",
-        //     },
-        //   }
-        // );
+        connectWallet(
+          {
+            // Required
+            uri: walletConnectUrl,
+            // Required
+            clientMeta: {
+              description: "Forkable web wallet for small/quick transactions.",
+              url: "https://punkwallet.io",
+              icons: ["https://punkwallet.io/punk.png"],
+              name: "🧑‍🎤 PunkWallet.io",
+            },
+          }
+        );
       }
     }
   }, [walletConnectUrl]);
