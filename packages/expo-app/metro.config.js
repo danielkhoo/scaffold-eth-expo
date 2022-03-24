@@ -16,6 +16,12 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
+config.resolver.extraNodeModules = {
+  // crypto: path.resolve(projectRoot, "node_modules/node-libs-react-native"),
+  // crypto: require('node-libs-react-native'),
+  stream: require.resolve('readable-stream'),
+  crypto: require.resolve('react-native-crypto-js'),
+}
 // config.resolver.sourceExts = []
 
 module.exports = config;

@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Button } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Button, TextInput } from "react-native";
 // Import the crypto getRandomValues shim (**BEFORE** the shims)
 import "react-native-get-random-values";
 // Import the the ethers shims (**BEFORE** ethers)
@@ -32,6 +32,7 @@ import { DisplayQRModal } from "./screens/DisplayQRModal";
 import Toast from 'react-native-toast-message';
 import { txContext } from './context/txContext';
 import PunkBlockie from "./components/PunkBlockie";
+import WalletConnect from "@walletconnect/client";
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
@@ -113,29 +114,6 @@ export default function App() {
   }, [])
 
 
-  // useEffect(() => {
-  //   async function getAddress() {
-  //     if (userSigner) {
-  //       const newAddress = await userSigner.getAddress();
-  //       setAddress(newAddress);
-  //     }
-  //   }
-  //   getAddress();
-  // }, [userSigner]);
-
-
-  const sendTxn = async () => {
-    const { wallet, targetNetwork } = userSigner;
-    console.log(wallet, targetNetwork);
-
-    // await signer.sendTransaction({
-    //   to: "0xA00F36889e25249492f93e00852Ba183776DC747",
-    //   value: ethers.utils.parseEther("0.01"),
-    //   data: ""
-    // });
-
-  }
-
   const options = [];
   for (const id in NETWORKS) {
     options.push(
@@ -182,6 +160,109 @@ export default function App() {
     }
   }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance, readContracts])
 
+  // ========================== Wallet Connect ==========================
+  const connectWallet = sessionDetails => {
+    console.log(" 📡 Connecting to Wallet Connect....", sessionDetails);
+
+    const connector = new WalletConnect(sessionDetails);
+
+    setWallectConnectConnector(connector);
+
+    // Subscribe to session requests
+    connector.on("session_request", (error, payload) => {
+      if (error) throw error
+
+      console.log("SESSION REQUEST");
+      // Handle Session Request
+
+      connector.approveSession({
+        accounts: [address,],
+        chainId: targetNetwork.chainId, // required
+      });
+
+      setConnected(true);
+      setWallectConnectConnectorSession(connector.session);
+
+      /* payload:
+      {
+        id: 1,
+        jsonrpc: '2.0'.
+        method: 'session_request',
+        params: [{
+          peerId: '15d8b6a3-15bd-493e-9358-111e3a4e6ee4',
+          peerMeta: {
+            name: "WalletConnect Example",
+            description: "Try out WalletConnect v1.0",
+            icons: ["https://example.walletconnect.org/favicon.ico"],
+            url: "https://example.walletconnect.org"
+          }
+        }]
+      }
+      */
+    });
+
+    // Subscribe to call requests
+    connector.on("call_request", async (error, payload) => {
+      if (error) {
+        throw error;
+      }
+
+      console.log("REQUEST PERMISSION TO:", payload, payload.params[0]);
+
+      // Render modal for approve / cancel
+    });
+
+    connector.on("disconnect", (error, payload) => {
+      if (error) throw error
+      console.log("disconnect");
+      // setTimeout(() => {
+      //   window.location.reload();
+      // }, 1);
+      // Delete connector
+    });
+  };
+
+  const [walletConnectUrl, setWalletConnectUrl] = useState("walletConnectUrl");
+  const [connected, setConnected] = useState();
+  const [wallectConnectConnectorSession, setWallectConnectConnectorSession] = useState("wallectConnectConnectorSession");
+  // const [wallectConnectConnector, setWallectConnectConnector] = useState();
+
+
+  useEffect(() => {
+    if (!connected) {
+
+      /*
+        let nextSession = false//localStorage.getItem("wallectConnectNextSession");
+        if (nextSession) {
+          // localStorage.removeItem("wallectConnectNextSession");
+          // console.log("FOUND A NEXT SESSION IN CACHE");
+          // setWalletConnectUrl(nextSession);
+        } else if (wallectConnectConnectorSession) {
+          console.log("NOT CONNECTED AND wallectConnectConnectorSession", wallectConnectConnectorSession);
+          connectWallet(wallectConnectConnectorSession);
+          setConnected(true);
+        } else 
+      */
+      if (walletConnectUrl /*&&!walletConnectUrlSaved*/) {
+        //CLEAR LOCAL STORAGE?!?
+        console.log("clear local storage and connect...");
+        // localStorage.removeItem("walletconnect"); // lololol
+        // connectWallet(
+        //   {
+        //     // Required
+        //     uri: walletConnectUrl,
+        //     // Required
+        //     clientMeta: {
+        //       description: "Forkable web wallet for small/quick transactions.",
+        //       url: "https://punkwallet.io",
+        //       icons: ["https://punkwallet.io/punk.png"],
+        //       name: "🧑‍🎤 PunkWallet.io",
+        //     },
+        //   }
+        // );
+      }
+    }
+  }, [walletConnectUrl]);
 
   function HomeScreen({ navigation }) {
     return (
@@ -215,6 +296,25 @@ export default function App() {
                   Send
                 </Text>
               </TouchableOpacity>
+            </View>
+            <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {connected && <TextInput value="✅" />}
+              <TextInput
+                placeholder={"wallet connect url"}
+                style={{
+                  fontSize: 18,
+                  height: 36,
+                }}
+                onChangeText={setWalletConnectUrl}
+                value={walletConnectUrl}
+                disabled={connected}
+              />
+              {connected && <TouchableOpacity
+                style={{}}
+              // onPress={() => navigation.goBack()}
+              >
+                <Text style={{}}> 🗑</Text>
+              </TouchableOpacity>}
             </View>
           </View>
         }
