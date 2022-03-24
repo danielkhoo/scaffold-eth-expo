@@ -3,6 +3,9 @@ import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import * as Clipboard from 'expo-clipboard';
 
 export default function AddressDisplay(props) {
+
+    const toast = props.toast
+
     const address = props.address || ''
 
     const copyToClipboard = () => {
@@ -13,7 +16,6 @@ export default function AddressDisplay(props) {
     const fetchCopiedText = async () => {
         const text = await Clipboard.getStringAsync();
         console.log(text);
-        props.toast()
     };
 
     let displayAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -25,7 +27,12 @@ export default function AddressDisplay(props) {
             <View style={styles.section}>
                 <TouchableOpacity onPress={() => {
                     copyToClipboard()
-                    props.toast()
+                    toast({
+                        position: 'bottom',
+                        visibilityTime: 1000,
+                        type: 'success',
+                        text1: 'Copied'
+                    })
                 }}>
                     <Text
                         style={styles.textButton}>
@@ -33,12 +40,12 @@ export default function AddressDisplay(props) {
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={fetchCopiedText}
-                // onPress={() => props.navigation.navigate('DisplayQRModal', { address })}
+                    // onPress={fetchCopiedText}
+                    onPress={() => props.navigation.navigate('DisplayQRModal', { address })}
                 >
                     <Text
                         style={styles.textButton}>
-                        Display QR
+                        View QR
                     </Text>
                 </TouchableOpacity>
             </View>
