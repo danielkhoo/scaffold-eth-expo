@@ -29,6 +29,7 @@ import { DisplayQRModal } from "./screens/DisplayQRModal";
 import Toast from 'react-native-toast-message';
 import { txContext } from './context/txContext';
 import PunkBlockie from "./components/PunkBlockie";
+import WalletConnect from "@walletconnect/client";
 /// 📡 What chain are your contracts deployed to?
 const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
@@ -106,8 +107,6 @@ export default function App() {
   }
 
 
-  // const tx = Transactor(userSigner, gasPrice);
-
 
   // You can warn the user if you would like them to be on a specific network
   const localChainId =
@@ -138,6 +137,49 @@ export default function App() {
   }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance])
 
 
+  const testConnect = () => {
+    const connector = new WalletConnect(
+      {
+        // Required
+        uri: "wc:d3b46e32-ccb4-4a2c-b6db-159af93751ed@1?bridge=https%3A%2F%2F2.bridge.walletconnect.org&key=a72444d8cc42865dfb54a82901f25fac72778a9620a37bcd07b675a6db4adc20",
+        // Required
+        clientMeta: {
+          description: "WalletConnect Developer App",
+          url: "https://walletconnect.org",
+          icons: ["https://walletconnect.org/walletconnect-logo.png"],
+          name: "WalletConnect",
+        },
+      }
+    );
+
+    // Subscribe to session requests
+    connector.on("session_request", (error, payload) => {
+      console.log("session_request");
+      if (error) {
+        throw error;
+      }
+
+      // Handle Session Request
+
+      /* payload:
+      {
+        id: 1,
+        jsonrpc: '2.0'.
+        method: 'session_request',
+        params: [{
+          peerId: '15d8b6a3-15bd-493e-9358-111e3a4e6ee4',
+          peerMeta: {
+            name: "WalletConnect Example",
+            description: "Try out WalletConnect v1.0",
+            icons: ["https://example.walletconnect.org/favicon.ico"],
+            url: "https://example.walletconnect.org"
+          }
+        }]
+      }
+      */
+    });
+  }
+
   function HomeScreen({ navigation }) {
     return (
       <View style={styles.container}>
@@ -162,8 +204,8 @@ export default function App() {
             <View style={{ alignItems: 'center' }}>
               <TouchableOpacity
                 style={{ width: 80, height: 36, justifyContent: 'center' }}
-                // onPress={sendTxn}
-                onPress={() => navigation.navigate('SendModal', { ethPrice: price, targetNetwork })}
+                onPress={testConnect}
+              // onPress={() => navigation.navigate('SendModal', { ethPrice: price, targetNetwork })}
               >
                 <Text
                   style={styles.textButton}>
