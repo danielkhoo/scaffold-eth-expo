@@ -11,10 +11,7 @@ import "./helpers/windows";
 import { useBalance } from "eth-hooks/useBalance";
 import { useGasPrice } from "eth-hooks/useGasPrice";
 import { useExchangeEthPrice } from "eth-hooks/dapps/dex";
-import { useContractLoader } from "eth-hooks/useContractLoader";
 // import { useUserProviderAndSigner } from "eth-hooks/useUserProviderAndSigner";
-import externalContracts from "./contracts/external_contracts";
-import deployedContracts from "./contracts/hardhat_contracts.json";
 // import { Transactor, Web3ModalSetup } from "./helpers";
 import { useStaticJsonRPC, useUserProviderAndSigner } from "./hooks";
 
@@ -71,18 +68,6 @@ export default function App() {
   /* 💵 This hook will get the price of ETH from 🦄 Uniswap: */
   const price = useExchangeEthPrice(targetNetwork, mainnetProvider);
 
-  /* 🔥 This hook will get the price of Gas from ⛽️ EtherGasStation */
-  const gasPrice = useGasPrice(targetNetwork, "fast");
-
-
-  // Use your injected provider from 🦊 Metamask
-  const userProvider =
-    useUserProviderAndSigner(
-      injectedProvider,
-      localProvider,
-      USE_BURNER_WALLET
-    ) || {};
-
 
   // On App load, check async storage for an existing wallet, else generate a 🔥 burner wallet.
   const [userSigner, setUserSigner] = useState();
@@ -113,29 +98,6 @@ export default function App() {
   }, [])
 
 
-  // useEffect(() => {
-  //   async function getAddress() {
-  //     if (userSigner) {
-  //       const newAddress = await userSigner.getAddress();
-  //       setAddress(newAddress);
-  //     }
-  //   }
-  //   getAddress();
-  // }, [userSigner]);
-
-
-  const sendTxn = async () => {
-    const { wallet, targetNetwork } = userSigner;
-    console.log(wallet, targetNetwork);
-
-    // await signer.sendTransaction({
-    //   to: "0xA00F36889e25249492f93e00852Ba183776DC747",
-    //   value: ethers.utils.parseEther("0.01"),
-    //   data: ""
-    // });
-
-  }
-
   const options = [];
   for (const id in NETWORKS) {
     options.push(
@@ -162,13 +124,6 @@ export default function App() {
   // Just plug in different 🛰 providers to get your balance on different chains:
   const yourMainnetBalance = useBalance(mainnetProvider, address);
 
-  const contractConfig = {
-    deployedContracts: deployedContracts || {},
-    externalContracts: externalContracts || {},
-  };
-
-  // Load in your local 📝 contract and read a value from it:
-  const readContracts = useContractLoader(localProvider, contractConfig);
 
   useEffect(() => {
     if (DEBUG && mainnetProvider && address && selectedNetwork && yourLocalBalance && yourMainnetBalance) {
@@ -180,7 +135,7 @@ export default function App() {
       console.log("💵 yourLocalBalance", yourLocalBalance ? ethers.utils.formatEther(yourLocalBalance) : "...")
       console.log("💵 yourMainnetBalance", yourMainnetBalance ? ethers.utils.formatEther(yourMainnetBalance) : "...")
     }
-  }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance, readContracts])
+  }, [mainnetProvider, address, selectedNetwork, yourLocalBalance, yourMainnetBalance])
 
 
   function HomeScreen({ navigation }) {
